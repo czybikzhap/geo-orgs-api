@@ -2,108 +2,56 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Activity;
-use App\Models\Building;
-use App\Models\Organization;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Http\Requests\ShowOrganizationRequest;
+use App\Http\Requests\GetByBuildingRequest;
+use App\Http\Requests\GetByActivityRequest;
+use App\Http\Requests\NearOrganizationsRequest;
+use App\Http\Requests\SearchByNameRequest;
+use App\Services\OrganizationService;
+use Illuminate\Http\JsonResponse;
 
 class OrganizationController extends Controller
 {
+    public function __construct(private OrganizationService $service) {}
 
-    public function show(int $id): object
+    public function show(ShowOrganizationRequest $request): JsonResponse
     {
-        $org = Organization::with(['phones', 'activities', 'building'])
-            ->findOrFail($id);
-
+        $id = $request->route('id');
+        $org = $this->service->getById($id);
         return response()->json($org);
     }
 
-    public function getByBuilding(int $buildingId): object
+    public function getByBuilding(GetByBuildingRequest $request): JsonResponse
     {
-        $orgs = Organization::where('building_id', $buildingId)->get();
-
+        $buildingId = $request->route('buildingId');
+        $orgs = $this->service->getByBuilding($buildingId);
         return response()->json($orgs);
     }
 
-    public function near(Request $request): object
+    public function near(NearOrganizationsRequest $request): JsonResponse
     {
-        $lat = $request->lat;
-        $lng = $request->lng;
-        $radius = $request->radius ?? 5;
-
-        $subquery = Building::selectRaw("
-            id, address, latitude, longitude,
-            ( 6371 * acos(cos(radians(?)) * cos(radians(latitude)) *
-            cos(radians(longitude) - radians(?)) +
-            sin(radians(?)) * sin(radians(latitude))) ) AS distance
-            ", [$lat, $lng, $lat]);
-
-        $buildings = DB::table(DB::raw("({$subquery->toSql()}) AS sub"))
-            ->mergeBindings($subquery->getQuery())
-            ->where('distance', '<=', $radius)
-            ->get();
-
-        $orgs = Organization::whereIn('building_id', $buildings->pluck('id'))->get();
-
-        return response()->json([
-            'buildings' => $buildings,
-            'organizations' => $orgs
-        ]);
+        $result = $this->service->near($request->lat, $request->lng, $request->radius);
+        return response()->json($result);
     }
 
-    public function getByActivity(int $activityId): object
+    public function getByActivity(GetByActivityRequest $request): JsonResponse
     {
-        $level2 = Activity::where('parent_id', $activityId)->pluck('id');
-        $level3 = Activity::whereIn('parent_id', $level2)->pluck('id');
-
-        $allActivityIds = collect([$activityId])
-            ->merge($level2)
-            ->merge($level3);
-
-        $orgs = Organization::whereHas('activities', fn($q) => $q->whereIn('activities.id', $allActivityIds))
-            ->get();
-
+        $activityId = $request->route('activityId');
+        $orgs = $this->service->getByActivity($activityId);
         return response()->json($orgs);
     }
 
-    public function searchByActivityTree(int $activityId): object
+    public function searchByActivityTree(GetByActivityRequest $request): JsonResponse
     {
-        $ids = $this->getActivityIdsRecursive($activityId);
-
-        $orgs = Organization::whereHas('activities', function ($q) use ($ids) {
-            $q->whereIn('activities.id', $ids);
-        })->get();
-
-        return response()->json($orgs);
-
-    }
-
-    private function getActivityIdsRecursive(int $id)
-    {
-        $ids = [$id];
-        $children = Activity::where('parent_id', $ids)->pluck('id');
-
-        foreach ($children as $childId) {
-            $ids = array_merge($ids, $this->getActivityIdsRecursive($childId));
-        }
-
-        return $ids;
-    }
-
-    public function searchByName(Request $request)
-    {
-        $searchTerm = $request->query('q'); // получаем строку поиска из ?q=...
-
-        if (!$searchTerm) {
-            return response()->json([
-                'error' => 'Query parameter "q" is required'
-            ], 400);
-        }
-
-        $orgs = Organization::where('name', 'ILIKE', "%{$searchTerm}%")->get();
-
+        $activityId = $request->route('activityId');
+        $orgs = $this->service->searchByActivityTree($activityId);
         return response()->json($orgs);
     }
 
+    public function searchByName(SearchByNameRequest $request): JsonResponse
+    {
+        $searchTerm = $request->query('q');
+        $orgs = $this->service->searchByName($searchTerm);
+        return response()->json($orgs);
+    }
 }
