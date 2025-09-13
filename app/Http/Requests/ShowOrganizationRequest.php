@@ -2,27 +2,28 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Organization;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 
 class ShowOrganizationRequest extends BaseApiRequest
 {
     public function authorize(): bool
     {
-        $apiKey = $this->header('X-API-KEY') ?? $this->query('api_key');
-        return $apiKey === config('app.api_key');
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'id' => 'required|integer|min:1',
+            'id' => 'required|integer|min:1|exists:organizations,id',
         ];
     }
 
-    public function prepareForValidation()
+    protected function prepareForValidation(): void
     {
         $this->merge([
-            'id' => $this->route('id')
+            'id' => $this->route('id'),
         ]);
     }
 
@@ -31,8 +32,18 @@ class ShowOrganizationRequest extends BaseApiRequest
         return [
             'id.required' => 'ID организации обязателен',
             'id.integer' => 'ID организации должен быть числом',
-            'id.min' => 'ID организации должен быть >= 1',
+            'id.min' => 'ID организации должен быть больше 0',
+            'id.exists' => 'Организация с таким ID не найдена',
         ];
+    }
+
+    protected function failedValidation(Validator|\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $errors = $validator->errors()->all();
+
+        throw new ValidationException($validator, response()->json([
+            'error' => $errors[0] ?? 'Ошибка валидации',
+        ], 422));
     }
 
 }

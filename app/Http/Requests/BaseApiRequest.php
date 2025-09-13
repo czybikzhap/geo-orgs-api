@@ -2,18 +2,18 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 abstract class BaseApiRequest extends FormRequest
 {
-    public function failedValidation(Validator $validator)
+    protected function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(
             response()->json([
-                'error' => 'Валидация не пройдена',
-                'messages' => $validator->errors()
+                'message' => 'Ошибка валидации',
+                'errors' => $validator->errors(),
             ], 422)
         );
     }
