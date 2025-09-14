@@ -13,52 +13,94 @@ class IndexOrganizationRequest extends BaseApiRequest
         return [
             'name' => 'sometimes|string|min:1',
             'building_id' => 'sometimes|integer|exists:buildings,id',
-            'activity_id' => 'sometimes|integer|exists:activities,id',
+
+            'activity_id' => 'sometimes',
+            'activity_id.*' => 'integer|exists:activities,id',
             'include_descendants' => 'sometimes|boolean',
 
-            'latitude' => 'sometimes|required_with:longitude,radius|numeric|between:-90,90',
-            'longitude' => 'sometimes|required_with:latitude,radius|numeric|between:-180,180',
-            'radius' => 'sometimes|required_with:latitude,longitude|numeric|min:0.1|max:6371',
+            'latitude' => 'sometimes|numeric|between:-90,90',
+            'longitude' => 'sometimes|numeric|between:-180,180',
+            'radius' => 'sometimes|numeric|min:0.1|max:6371',
 
-            'min_lat' => 'sometimes|required_with:max_lat,min_lng,max_lng|numeric|between:-90,90',
-            'max_lat' => 'sometimes|required_with:min_lat,min_lng,max_lng|numeric|between:-90,90',
-            'min_lng' => 'sometimes|required_with:min_lat,max_lat,max_lng|numeric|between:-180,180',
-            'max_lng' => 'sometimes|required_with:min_lat,max_lat,min_lng|numeric|between:-180,180',
+            'min_lat' => 'sometimes|numeric|between:-90,90',
+            'max_lat' => 'sometimes|numeric|between:-90,90',
+            'min_lng' => 'sometimes|numeric|between:-180,180',
+            'max_lng' => 'sometimes|numeric|between:-180,180',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $data = $this->all();
+
+            // Проверка для радиуса
+            $radiusFields = ['latitude', 'longitude', 'radius'];
+            $hasSomeRadiusFields = count(array_intersect(array_keys($data), $radiusFields)) > 0;
+            $hasAllRadiusFields = count(array_intersect(array_keys($data), $radiusFields)) === 3;
+
+            if ($hasSomeRadiusFields && !$hasAllRadiusFields) {
+                $validator->errors()->add('latitude', 'Для фильтра по радиусу необходимо указать latitude, longitude и radius');
+            }
+
+            // Проверка для bounding box
+            $bboxFields = ['min_lat', 'max_lat', 'min_lng', 'max_lng'];
+            $hasSomeBboxFields = count(array_intersect(array_keys($data), $bboxFields)) > 0;
+            $hasAllBboxFields = count(array_intersect(array_keys($data), $bboxFields)) === 4;
+
+            if ($hasSomeBboxFields && !$hasAllBboxFields) {
+                $validator->errors()->add('min_lat', 'Для фильтра по bounding box необходимо указать min_lat, max_lat, min_lng и max_lng');
+            }
+        });
+    }
+    protected function prepareForValidation()
+    {
+        if ($this->has('activity_id') && is_string($this->activity_id)) {
+            $this->merge([
+                'activity_id' => explode(',', $this->activity_id),
+            ]);
+        }
+
+        if ($this->has('include_descendants')) {
+            $this->merge([
+                'include_descendants' => filter_var(
+                        $this->include_descendants,
+                        FILTER_VALIDATE_BOOLEAN,
+                        FILTER_NULL_ON_FAILURE
+                    ) ?? false,
+            ]);
+        }
     }
 
     public function messages(): array
     {
         return [
-            'name.string' => 'Название должно быть строкой',
-            'name.min' => 'Название должно содержать минимум 1 символ',
-            'building_id.integer' => 'ID здания должно быть числом',
-            'building_id.exists' => 'Здание с таким ID не найдено',
-            'activity_id.integer' => 'ID деятельности должен быть числом',
-            'activity_id.exists' => 'Деятельность с таким ID не найдено',
-            'include_descendants.boolean' => 'include_descendants должен быть булевым значением',
-            'latitude.required_with' => 'Широта обязательна при указании долготы и радиуса',
             'latitude.numeric' => 'Широта должна быть числом',
-            'latitude.between' => 'Широта должна быть от -90 до 90',
-            'longitude.required_with' => 'Долгота обязательна при указании широты и радиуса',
             'longitude.numeric' => 'Долгота должна быть числом',
-            'longitude.between' => 'Долгота должна быть от -180 до 180',
-            'radius.required_with' => 'Радиус обязателен при указании широты и долготы',
             'radius.numeric' => 'Радиус должен быть числом',
-            'radius.min' => 'Радиус не может быть меньше 0.1 км',
-            'radius.max' => 'Радиус не может превышать 6371 км',
-            'min_lat.required_with' => 'min_lat обязателен при указании остальных координат прямоугольника',
-            'min_lat.numeric' => 'min_lat должно быть числом',
-            'min_lat.between' => 'min_lat должно быть от -90 до 90',
-            'max_lat.required_with' => 'max_lat обязателен при указании остальных координат прямоугольника',
-            'max_lat.numeric' => 'max_lat должно быть числом',
-            'max_lat.between' => 'max_lat должно быть от -90 до 90',
-            'min_lng.required_with' => 'min_lng обязателен при указании остальных координат прямоугольника',
-            'min_lng.numeric' => 'min_lng должно быть числом',
-            'min_lng.between' => 'min_lng должно быть от -180 до 180',
-            'max_lng.required_with' => 'max_lng обязателен при указании остальных координат прямоугольника',
-            'max_lng.numeric' => 'max_lng должно быть числом',
-            'max_lng.between' => 'max_lng должно быть от -180 до 180',
+
+            'min_lat.numeric' => 'Минимальная широта должна быть числом',
+            'max_lat.numeric' => 'Максимальная широта должна быть числом',
+            'min_lng.numeric' => 'Минимальная долгота должна быть числом',
+            'max_lng.numeric' => 'Максимальная долгота должна быть числом',
+
+            'latitude.between' => 'Широта должна быть между -90 и 90 градусами',
+            'longitude.between' => 'Долгота должна быть между -180 и 180 градусами',
+            'min_lat.between' => 'Минимальная широта должна быть между -90 и 90 градусами',
+            'max_lat.between' => 'Максимальная широта должна быть между -90 и 90 градусами',
+            'min_lng.between' => 'Минимальная долгота должна быть между -180 и 180 градусами',
+            'max_lng.between' => 'Максимальная долгота должна быть между -180 и 180 градусами',
+
+            'radius.min' => 'Радиус должен быть не менее 0.1 км',
+            'radius.max' => 'Радиус должен быть не более 6371 км (радиус Земли)',
+
+            'name.string' => 'Название должно быть строкой',
+            'name.min' => 'Название должно содержать хотя бы 1 символ',
+            'building_id.integer' => 'ID здания должен быть целым числом',
+            'building_id.exists' => 'Указанное здание не существует',
+            'activity_id.*.integer' => 'ID активности должен быть целым числом',
+            'activity_id.*.exists' => 'Указанная активность не существует',
+            'include_descendants.boolean' => 'Параметр include_descendants должен быть true или false',
         ];
     }
 

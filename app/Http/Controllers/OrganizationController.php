@@ -8,7 +8,6 @@ use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
 use App\Services\OrganizationService;
 
-
 /**
  * @OA\Info(
  *     title="Organizations REST API",
@@ -22,9 +21,11 @@ use App\Services\OrganizationService;
  *     in="header",
  *     name="X-API-KEY"
  * )
+ *
+ * @OA\OpenApi(
+ *     security={{"apiKey": {}}}
+ * )
  */
-
-
 class OrganizationController extends Controller
 {
     public function __construct(private OrganizationService $service) {}
@@ -34,6 +35,7 @@ class OrganizationController extends Controller
      *     path="/api/organizations",
      *     summary="Список организаций с фильтрацией",
      *     tags={"Organizations"},
+     *     security={{"apiKey":{}}},
      *     @OA\Parameter(
      *         name="name",
      *         in="query",
@@ -123,7 +125,6 @@ class OrganizationController extends Controller
      *     )
      * )
      */
-
     public function index(IndexOrganizationRequest $request)
     {
         $filters = $request->validated();
@@ -136,6 +137,7 @@ class OrganizationController extends Controller
      *     path="/api/organizations/{id}",
      *     summary="Получить организацию по ID",
      *     tags={"Organizations"},
+     *     security={{"apiKey":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -154,11 +156,9 @@ class OrganizationController extends Controller
      *     )
      * )
      */
-
     public function show(ShowOrganizationRequest $request)
     {
         $organization = Organization::findOrFail($request->validated('id'));
-
         return new OrganizationResource($organization);
     }
 }

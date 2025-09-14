@@ -18,27 +18,31 @@ class OrganizationFilter
         }
 
         if (!empty($filters['activity_id'])) {
-            $activityIds = is_array($filters['activity_id'])
-                ? $filters['activity_id']
-                : explode(',', $filters['activity_id']);
-
             $allIds = [];
-            foreach ($activityIds as $id) {
-                $allIds = array_merge($allIds, $this->getDescendantIds((int)$id));
+            foreach ($filters['activity_id'] as $id) {
+                if (!empty($filters['include_descendants'])) {
+                    $allIds = array_merge($allIds, $this->getDescendantIds((int)$id));
+                } else {
+                    $allIds[] = (int)$id;
+                }
             }
 
             $query->whereHas('activities', fn($q) => $q->whereIn('activities.id', $allIds));
         }
 
-        if (!empty($filters['latitude']) && !empty($filters['longitude']) && !empty($filters['radius'])) {
-            $this->applyRadiusFilter($query, $filters['latitude'], $filters['longitude'], $filters['radius']);
+        if (isset($filters['latitude'], $filters['longitude'], $filters['radius'])) {
+            $this->applyRadiusFilter(
+                $query,
+                (float)$filters['latitude'],
+                (float)$filters['longitude'],
+                (float)$filters['radius']
+            );
         }
 
-        if (!empty($filters['min_lat']) && !empty($filters['max_lat']) &&
-            !empty($filters['min_lng']) && !empty($filters['max_lng'])) {
+        if (isset($filters['min_lat'], $filters['max_lat'], $filters['min_lng'], $filters['max_lng'])) {
             $query->whereHas('building', function ($q) use ($filters) {
-                $q->whereBetween('latitude', [$filters['min_lat'], $filters['max_lat']])
-                    ->whereBetween('longitude', [$filters['min_lng'], $filters['max_lng']]);
+                $q->whereBetween('latitude', [(float)$filters['min_lat'], (float)$filters['max_lat']])
+                    ->whereBetween('longitude', [(float)$filters['min_lng'], (float)$filters['max_lng']]);
             });
         }
 

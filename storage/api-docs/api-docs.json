@@ -156,7 +156,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
             }
         },
         "/api/organizations/{id}": {
@@ -192,7 +197,12 @@
                     "404": {
                         "description": "Организация не найдена"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ]
             }
         }
     },
@@ -233,6 +243,11 @@
             }
         }
     },
+    "security": [
+        {
+            "apiKey": []
+        }
+    ],
     "tags": [
         {
             "name": "Organizations",
