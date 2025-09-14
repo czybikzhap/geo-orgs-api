@@ -2,22 +2,34 @@
 
 namespace App\Services;
 
-use App\Filters\OrganizationFilter;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\Organization;
-use Illuminate\Database\Eloquent\Builder;
+use App\Filters\RadiusFilter;
+use App\Filters\BoundingBoxFilter;
+use App\Filters\ActivityFilter;
+use App\Filters\SearchFilter;
 
 class OrganizationService
 {
-    public function __construct(private OrganizationFilter $filter) {}
-
-    public function getOrganizations(array $filters): Builder
+    public function getOrganizations(array $filters)
     {
-        $query = Organization::query()->with(['building', 'phones', 'activities']);
-        return $this->filter->apply($query, $filters);
+        return QueryBuilder::for(Organization::class)
+            ->with(['building', 'phones', 'activities'])
+            ->allowedFilters([
+                AllowedFilter::custom('search', new SearchFilter()),
+                AllowedFilter::exact('building_id'),
+                AllowedFilter::custom('activity_id', new ActivityFilter()),
+                AllowedFilter::custom('radius', new RadiusFilter()),
+                AllowedFilter::custom('bbox', new BoundingBoxFilter()),
+            ])
+            ->defaultSort('name')
+            ->paginate(10);
     }
 
     public function getById(int $id): Organization
     {
-        return Organization::with(['building', 'phones', 'activities'])->findOrFail($id);
+        return Organization::with(['building', 'phones', 'activities'])
+            ->findOrFail($id);
     }
 }

@@ -13,7 +13,6 @@ class IndexOrganizationRequest extends BaseApiRequest
         return [
             'name' => 'sometimes|string|min:1',
             'building_id' => 'sometimes|integer|exists:buildings,id',
-
             'activity_id' => 'sometimes',
             'activity_id.*' => 'integer|exists:activities,id',
             'include_descendants' => 'sometimes|boolean',
@@ -34,7 +33,6 @@ class IndexOrganizationRequest extends BaseApiRequest
         $validator->after(function ($validator) {
             $data = $this->all();
 
-            // Проверка для радиуса
             $radiusFields = ['latitude', 'longitude', 'radius'];
             $hasSomeRadiusFields = count(array_intersect(array_keys($data), $radiusFields)) > 0;
             $hasAllRadiusFields = count(array_intersect(array_keys($data), $radiusFields)) === 3;
@@ -43,7 +41,6 @@ class IndexOrganizationRequest extends BaseApiRequest
                 $validator->errors()->add('latitude', 'Для фильтра по радиусу необходимо указать latitude, longitude и radius');
             }
 
-            // Проверка для bounding box
             $bboxFields = ['min_lat', 'max_lat', 'min_lng', 'max_lng'];
             $hasSomeBboxFields = count(array_intersect(array_keys($data), $bboxFields)) > 0;
             $hasAllBboxFields = count(array_intersect(array_keys($data), $bboxFields)) === 4;

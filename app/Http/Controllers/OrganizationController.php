@@ -128,7 +128,7 @@ class OrganizationController extends Controller
     public function index(IndexOrganizationRequest $request)
     {
         $filters = $request->validated();
-        $organizations = $this->service->getOrganizations($filters)->paginate(10);
+        $organizations = $this->service->getOrganizations($filters);
         return OrganizationResource::collection($organizations);
     }
 
@@ -158,7 +158,7 @@ class OrganizationController extends Controller
      */
     public function show(ShowOrganizationRequest $request)
     {
-        $organization = Organization::findOrFail($request->validated('id'));
+        $organization = $this->service->getById($request->validated('id'));
         return new OrganizationResource($organization);
     }
 }
