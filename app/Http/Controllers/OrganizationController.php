@@ -37,81 +37,74 @@ class OrganizationController extends Controller
      *     tags={"Organizations"},
      *     security={{"apiKey":{}}},
      *     @OA\Parameter(
-     *         name="name",
-     *         in="query",
-     *         description="Поиск по названию организации",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="building_id",
-     *         in="query",
-     *         description="Фильтр по ID здания",
-     *         required=false,
-     *         @OA\Schema(type="integer", example=3)
-     *     ),
-     *     @OA\Parameter(
-     *         name="activity_id",
+     *         name="filter[activity_id]",
      *         in="query",
      *         description="Фильтр по ID вида деятельности",
      *         required=false,
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
-     *         name="include_descendants",
+     *         name="filter[building_id]",
      *         in="query",
-     *         description="Искать также по дочерним видам деятельности (true/false)",
+     *         description="Фильтр по ID здания",
      *         required=false,
-     *         @OA\Schema(type="boolean", example=true)
+     *         @OA\Schema(type="integer", example=3)
      *     ),
      *     @OA\Parameter(
-     *         name="latitude",
+     *         name="filter[bbox][latitude]",
      *         in="query",
      *         description="Центр поиска — широта",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=55.751244)
      *     ),
      *     @OA\Parameter(
-     *         name="longitude",
+     *         name="filter[bbox][longitude]",
      *         in="query",
      *         description="Центр поиска — долгота",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=37.618423)
      *     ),
      *     @OA\Parameter(
-     *         name="radius",
+     *         name="filter[bbox][radius]",
      *         in="query",
      *         description="Радиус поиска (в км)",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=5.0)
      *     ),
      *     @OA\Parameter(
-     *         name="min_lat",
+     *         name="filter[bbox][min_lat]",
      *         in="query",
      *         description="Минимальная широта (для bounding box)",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=55.7)
      *     ),
      *     @OA\Parameter(
-     *         name="max_lat",
+     *         name="filter[bbox][max_lat]",
      *         in="query",
      *         description="Максимальная широта (для bounding box)",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=55.8)
      *     ),
      *     @OA\Parameter(
-     *         name="min_lng",
+     *         name="filter[bbox][min_lng]",
      *         in="query",
      *         description="Минимальная долгота (для bounding box)",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=37.6)
      *     ),
      *     @OA\Parameter(
-     *         name="max_lng",
+     *         name="filter[bbox][max_lng]",
      *         in="query",
      *         description="Максимальная долгота (для bounding box)",
      *         required=false,
      *         @OA\Schema(type="number", format="float", example=37.7)
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter[name]",
+     *         in="query",
+     *         description="Поиск по названию организации",
+     *         required=false,
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\Response(
      *         response=200,

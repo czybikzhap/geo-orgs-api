@@ -13,9 +13,10 @@ class IndexOrganizationRequest extends BaseApiRequest
         return [
             'name' => 'sometimes|string|min:1',
             'building_id' => 'sometimes|integer|exists:buildings,id',
-            'activity_id' => 'sometimes',
-            'activity_id.*' => 'integer|exists:activities,id',
-            'include_descendants' => 'sometimes|boolean',
+            'activity_id' => 'sometimes|integer|exists:activities,id',
+
+            'filter.building_id' => 'sometimes|integer|exists:buildings,id',
+            'filter.activity_id' => 'sometimes|integer|exists:activities,id',
 
             'latitude' => 'sometimes|numeric|between:-90,90',
             'longitude' => 'sometimes|numeric|between:-180,180',
@@ -32,6 +33,51 @@ class IndexOrganizationRequest extends BaseApiRequest
     {
         $validator->after(function ($validator) {
             $data = $this->all();
+
+            // Проверка на пустые значения
+            if (isset($data['filter']['building_id']) && $data['filter']['building_id'] === '') {
+                $validator->errors()->add('building_id', 'ID здания не может быть пустым');
+            }
+
+            if (isset($data['filter']['activity_id']) && $data['filter']['activity_id'] === '') {
+                $validator->errors()->add('activity_id', 'ID активности не может быть пустым');
+            }
+
+            if (isset($data['filter']['activities.id']) && $data['filter']['activities.id'] === '') {
+                $validator->errors()->add('activity_id', 'ID активности не может быть пустым');
+            }
+
+            // Проверка на числовые значения перед exists
+            if (isset($data['filter']['building_id']) && !is_numeric($data['filter']['building_id'])) {
+                $validator->errors()->add('building_id', 'ID здания должен быть числом');
+            }
+
+            if (isset($data['filter']['activity_id']) && !is_numeric($data['filter']['activity_id'])) {
+                $validator->errors()->add('activity_id', 'ID активности должен быть числом');
+            }
+
+            if (isset($data['filter']['activities.id']) && !is_numeric($data['filter']['activities.id'])) {
+                $validator->errors()->add('activity_id', 'ID активности должен быть числом');
+            }
+
+            // Только после числовой проверки делаем exists проверку
+            if (isset($data['filter']['building_id']) && is_numeric($data['filter']['building_id'])) {
+                if (!\App\Models\Building::where('id', $data['filter']['building_id'])->exists()) {
+                    $validator->errors()->add('building_id', 'Указанное здание не существует');
+                }
+            }
+
+            if (isset($data['filter']['activity_id']) && is_numeric($data['filter']['activity_id'])) {
+                if (!\App\Models\Activity::where('id', $data['filter']['activity_id'])->exists()) {
+                    $validator->errors()->add('activity_id', 'Указанная активность не существует');
+                }
+            }
+
+            if (isset($data['filter']['activities.id']) && is_numeric($data['filter']['activities.id'])) {
+                if (!\App\Models\Activity::where('id', $data['filter']['activities.id'])->exists()) {
+                    $validator->errors()->add('activity_id', 'Указанная активность не существует');
+                }
+            }
 
             $radiusFields = ['latitude', 'longitude', 'radius'];
             $hasSomeRadiusFields = count(array_intersect(array_keys($data), $radiusFields)) > 0;
@@ -50,24 +96,8 @@ class IndexOrganizationRequest extends BaseApiRequest
             }
         });
     }
-    protected function prepareForValidation()
-    {
-        if ($this->has('activity_id') && is_string($this->activity_id)) {
-            $this->merge([
-                'activity_id' => explode(',', $this->activity_id),
-            ]);
-        }
 
-        if ($this->has('include_descendants')) {
-            $this->merge([
-                'include_descendants' => filter_var(
-                        $this->include_descendants,
-                        FILTER_VALIDATE_BOOLEAN,
-                        FILTER_NULL_ON_FAILURE
-                    ) ?? false,
-            ]);
-        }
-    }
+
 
     public function messages(): array
     {
@@ -95,9 +125,14 @@ class IndexOrganizationRequest extends BaseApiRequest
             'name.min' => 'Название должно содержать хотя бы 1 символ',
             'building_id.integer' => 'ID здания должен быть целым числом',
             'building_id.exists' => 'Указанное здание не существует',
-            'activity_id.*.integer' => 'ID активности должен быть целым числом',
-            'activity_id.*.exists' => 'Указанная активность не существует',
+            'activity_id.integer' => 'ID активности должен быть целым числом',
+            'activity_id.exists' => 'Указанная активность не существует',
             'include_descendants.boolean' => 'Параметр include_descendants должен быть true или false',
+
+            'filter.building_id.integer' => 'ID здания должен быть целым числом',
+            'filter.building_id.exists' => 'Указанное здание не существует',
+            'filter.activity_id.integer' => 'ID активности должен быть целым числом',
+            'filter.activity_id.exists' => 'Указанная активность не существует',
         ];
     }
 

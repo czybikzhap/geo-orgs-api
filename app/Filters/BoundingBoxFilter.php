@@ -7,19 +7,32 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BoundingBoxFilter implements Filter
 {
+    /**
+     * $value ожидается как массив:
+     * [
+     *   'min_lat' => float,
+     *   'max_lat' => float,
+     *   'min_lng' => float,
+     *   'max_lng' => float,
+     * ]
+     */
     public function __invoke(Builder $query, $value, string $property)
     {
-        if ($value !== 'true') {
+        // Проверка что пришёл массив с координатами
+        if (!is_array($value)) {
             return;
         }
 
-        $minLat = (float) request('min_lat');
-        $maxLat = (float) request('max_lat');
-        $minLng = (float) request('min_lng');
-        $maxLng = (float) request('max_lng');
+        $minLat = $value['min_lat'] ?? null;
+        $maxLat = $value['max_lat'] ?? null;
+        $minLng = $value['min_lng'] ?? null;
+        $maxLng = $value['max_lng'] ?? null;
 
-        $query->join('buildings', 'organizations.building_id', '=', 'buildings.id')
-            ->whereBetween('buildings.latitude', [$minLat, $maxLat])
-            ->whereBetween('buildings.longitude', [$minLng, $maxLng]);
+        if ($minLat !== null && $maxLat !== null && $minLng !== null && $maxLng !== null) {
+            $query->whereHas('building', function ($q) use ($minLat, $maxLat, $minLng, $maxLng) {
+                $q->whereBetween('latitude', [$minLat, $maxLat])
+                    ->whereBetween('longitude', [$minLng, $maxLng]);
+            });
+        }
     }
 }

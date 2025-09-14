@@ -15,26 +15,7 @@
                 "operationId": "42efb13746ba71d73c330585f09ecef8",
                 "parameters": [
                     {
-                        "name": "name",
-                        "in": "query",
-                        "description": "Поиск по названию организации",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "building_id",
-                        "in": "query",
-                        "description": "Фильтр по ID здания",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 3
-                        }
-                    },
-                    {
-                        "name": "activity_id",
+                        "name": "filter[activity_id]",
                         "in": "query",
                         "description": "Фильтр по ID вида деятельности",
                         "required": false,
@@ -44,17 +25,17 @@
                         }
                     },
                     {
-                        "name": "include_descendants",
+                        "name": "filter[building_id]",
                         "in": "query",
-                        "description": "Искать также по дочерним видам деятельности (true/false)",
+                        "description": "Фильтр по ID здания",
                         "required": false,
                         "schema": {
-                            "type": "boolean",
-                            "example": true
+                            "type": "integer",
+                            "example": 3
                         }
                     },
                     {
-                        "name": "latitude",
+                        "name": "filter[bbox][latitude]",
                         "in": "query",
                         "description": "Центр поиска — широта",
                         "required": false,
@@ -65,7 +46,7 @@
                         }
                     },
                     {
-                        "name": "longitude",
+                        "name": "filter[bbox][longitude]",
                         "in": "query",
                         "description": "Центр поиска — долгота",
                         "required": false,
@@ -76,7 +57,7 @@
                         }
                     },
                     {
-                        "name": "radius",
+                        "name": "filter[bbox][radius]",
                         "in": "query",
                         "description": "Радиус поиска (в км)",
                         "required": false,
@@ -87,7 +68,7 @@
                         }
                     },
                     {
-                        "name": "min_lat",
+                        "name": "filter[bbox][min_lat]",
                         "in": "query",
                         "description": "Минимальная широта (для bounding box)",
                         "required": false,
@@ -98,7 +79,7 @@
                         }
                     },
                     {
-                        "name": "max_lat",
+                        "name": "filter[bbox][max_lat]",
                         "in": "query",
                         "description": "Максимальная широта (для bounding box)",
                         "required": false,
@@ -109,7 +90,7 @@
                         }
                     },
                     {
-                        "name": "min_lng",
+                        "name": "filter[bbox][min_lng]",
                         "in": "query",
                         "description": "Минимальная долгота (для bounding box)",
                         "required": false,
@@ -120,7 +101,7 @@
                         }
                     },
                     {
-                        "name": "max_lng",
+                        "name": "filter[bbox][max_lng]",
                         "in": "query",
                         "description": "Максимальная долгота (для bounding box)",
                         "required": false,
@@ -128,6 +109,15 @@
                             "type": "number",
                             "format": "float",
                             "example": 37.7
+                        }
+                    },
+                    {
+                        "name": "filter[name]",
+                        "in": "query",
+                        "description": "Поиск по названию организации",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
