@@ -22,10 +22,12 @@ class IndexOrganizationRequest extends BaseApiRequest
             'longitude' => 'sometimes|numeric|between:-180,180',
             'radius' => 'sometimes|numeric|min:0.1|max:6371',
 
-            'min_lat' => 'sometimes|numeric|between:-90,90',
-            'max_lat' => 'sometimes|numeric|between:-90,90',
-            'min_lng' => 'sometimes|numeric|between:-180,180',
-            'max_lng' => 'sometimes|numeric|between:-180,180',
+
+            'filter.bbox.min_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'filter.bbox.max_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'filter.bbox.min_lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'filter.bbox.max_lng' => ['nullable', 'numeric', 'between:-180,180'],
+
         ];
     }
 
@@ -34,7 +36,6 @@ class IndexOrganizationRequest extends BaseApiRequest
         $validator->after(function ($validator) {
             $data = $this->all();
 
-            // Проверка на пустые значения
             if (isset($data['filter']['building_id']) && $data['filter']['building_id'] === '') {
                 $validator->errors()->add('building_id', 'ID здания не может быть пустым');
             }
@@ -44,23 +45,21 @@ class IndexOrganizationRequest extends BaseApiRequest
             }
 
             if (isset($data['filter']['activities.id']) && $data['filter']['activities.id'] === '') {
-                $validator->errors()->add('activity_id', 'ID активности не может быть пустым');
+                $validator->errors()->add('activity_id', 'ID деятельности не может быть пустым');
             }
 
-            // Проверка на числовые значения перед exists
             if (isset($data['filter']['building_id']) && !is_numeric($data['filter']['building_id'])) {
                 $validator->errors()->add('building_id', 'ID здания должен быть числом');
             }
 
             if (isset($data['filter']['activity_id']) && !is_numeric($data['filter']['activity_id'])) {
-                $validator->errors()->add('activity_id', 'ID активности должен быть числом');
+                $validator->errors()->add('activity_id', 'ID деятельности должен быть числом');
             }
 
             if (isset($data['filter']['activities.id']) && !is_numeric($data['filter']['activities.id'])) {
-                $validator->errors()->add('activity_id', 'ID активности должен быть числом');
+                $validator->errors()->add('activity_id', 'ID деятельности должен быть числом');
             }
 
-            // Только после числовой проверки делаем exists проверку
             if (isset($data['filter']['building_id']) && is_numeric($data['filter']['building_id'])) {
                 if (!\App\Models\Building::where('id', $data['filter']['building_id'])->exists()) {
                     $validator->errors()->add('building_id', 'Указанное здание не существует');
@@ -69,13 +68,13 @@ class IndexOrganizationRequest extends BaseApiRequest
 
             if (isset($data['filter']['activity_id']) && is_numeric($data['filter']['activity_id'])) {
                 if (!\App\Models\Activity::where('id', $data['filter']['activity_id'])->exists()) {
-                    $validator->errors()->add('activity_id', 'Указанная активность не существует');
+                    $validator->errors()->add('activity_id', 'Указанная деятельность не существует');
                 }
             }
 
             if (isset($data['filter']['activities.id']) && is_numeric($data['filter']['activities.id'])) {
                 if (!\App\Models\Activity::where('id', $data['filter']['activities.id'])->exists()) {
-                    $validator->errors()->add('activity_id', 'Указанная активность не существует');
+                    $validator->errors()->add('activity_id', 'Указанная деятельность не существует');
                 }
             }
 
@@ -95,6 +94,27 @@ class IndexOrganizationRequest extends BaseApiRequest
                 $validator->errors()->add('min_lat', 'Для фильтра по bounding box необходимо указать min_lat, max_lat, min_lng и max_lng');
             }
         });
+
+        $validator->after(function ($validator) {
+            $data = $this->all();
+
+            $bboxFields = ['min_lat', 'max_lat', 'min_lng', 'max_lng'];
+            $hasSomeBboxFields = false;
+            $hasAllBboxFields = true;
+
+            foreach ($bboxFields as $field) {
+                if (isset($data['filter']['bbox'][$field])) {
+                    $hasSomeBboxFields = true;
+                } else {
+                    $hasAllBboxFields = false;
+                }
+            }
+
+            if ($hasSomeBboxFields && !$hasAllBboxFields) {
+                $validator->errors()->add('bbox', 'Для фильтра по bounding box необходимо указать все параметры: min_lat, max_lat, min_lng, max_lng');
+            }
+        });
+
     }
 
 
@@ -111,12 +131,22 @@ class IndexOrganizationRequest extends BaseApiRequest
             'min_lng.numeric' => 'Минимальная долгота должна быть числом',
             'max_lng.numeric' => 'Максимальная долгота должна быть числом',
 
-            'latitude.between' => 'Широта должна быть между -90 и 90 градусами',
-            'longitude.between' => 'Долгота должна быть между -180 и 180 градусами',
-            'min_lat.between' => 'Минимальная широта должна быть между -90 и 90 градусами',
-            'max_lat.between' => 'Максимальная широта должна быть между -90 и 90 градусами',
-            'min_lng.between' => 'Минимальная долгота должна быть между -180 и 180 градусами',
-            'max_lng.between' => 'Максимальная долгота должна быть между -180 и 180 градусами',
+            'filter.bbox.min_lat.numeric' => 'Минимальная широта должна быть числом',
+            'filter.bbox.min_lat.between' => 'Минимальная широта должна быть между -90 и 90 градусами',
+
+            'filter.bbox.max_lat.numeric' => 'Максимальная широта должна быть числом',
+            'filter.bbox.max_lat.between' => 'Максимальная широта должна быть между -90 и 90 градусами',
+
+            'filter.bbox.min_lng.numeric' => 'Минимальная долгота должна быть числом',
+            'filter.bbox.min_lng.between' => 'Минимальная долгота должна быть между -180 и 180 градусами',
+
+            'filter.bbox.max_lng.numeric' => 'Максимальная долгота должна быть числом',
+            'filter.bbox.max_lng.between' => 'Максимальная долгота должна быть между -180 и 180 градусами',
+
+            'filter.bbox.min_lat.required' => 'Минимальная широта обязательна для bounding box',
+            'filter.bbox.max_lat.required' => 'Максимальная широта обязательна для bounding box',
+            'filter.bbox.min_lng.required' => 'Минимальная долгота обязательна для bounding box',
+            'filter.bbox.max_lng.required' => 'Максимальная долгота обязательна для bounding box',
 
             'radius.min' => 'Радиус должен быть не менее 0.1 км',
             'radius.max' => 'Радиус должен быть не более 6371 км (радиус Земли)',
